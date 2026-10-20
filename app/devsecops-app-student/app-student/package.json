@@ -1,0 +1,16 @@
+{
+  "name": "saci-devsecops-task-api",
+  "version": "1.0.0",
+  "description": "API de tarefas (To-Do) - codigo-base da trilha de DevSecOps do SACI. Contem vulnerabilidades plantadas de proposito para fins didaticos.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "lodash": "4.17.15",
+    "jsonwebtoken": "8.5.1"
+  }
+}

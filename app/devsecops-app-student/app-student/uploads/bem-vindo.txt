@@ -1,0 +1,4 @@
+Bem-vindo à API de Tarefas do SACI!
+
+Este é um arquivo de exemplo servido pelo endpoint GET /api/files/:filename.
+Tente acessar: /api/files/bem-vindo.txt
