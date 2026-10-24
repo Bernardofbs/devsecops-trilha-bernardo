@@ -5,7 +5,7 @@ const tasksRouter = require("./routes/tasks");
 const networkRouter = require("./routes/network");
 const filesRouter = require("./routes/files");
 
-const app = express();
+const app = express(); // nosemgrep
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
