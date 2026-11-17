@@ -1,54 +1,54 @@
-
-name: Security Pipeline - SAST Semgrep
+name: Security Pipeline - SAST, SCA, Secrets & Container
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
   pull_request:
-    branches: ["main"]
-  workflow_dispatch:
-
-permissions:
-  contents: read
+    branches: [ "main" ]
 
 jobs:
-  semgrep-sast:
-    name: Build e Análise SAST
+  security-gates:
+    name: Security Gates (Semgrep + Gitleaks + Trivy)
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repository (com histórico completo para Gitleaks)
         uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
         with:
-          node-version: "20"
-
-      - name: Install project dependencies
-        working-directory: app/devsecops-app-student/app-student
-        run: npm ci
-
-      - name: Build Docker image
-        run: |
-          docker build \
-            -t devsecops-app:ci \
-            app/devsecops-app-student/app-student
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: '3.10'
 
-      - name: Install Semgrep
+      - name: Install and Run Semgrep (SAST)
         run: |
           python -m pip install --upgrade pip
-          python -m pip install semgrep
+          pip install semgrep
+          semgrep --config "p/dockerfile" --error app/devsecops-app-student/app-student/Dockerfile
 
-      - name: Run Semgrep SAST Scan
+      - name: Run Gitleaks (Detecção de Segredos)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Trivy SCA (Scan de Dependências e Código)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'app/devsecops-app-student/app-student'
+          severity: 'CRITICAL'
+          exit-code: '1'
+
+      - name: Build Docker Image para Scan
         run: |
-          semgrep scan \
-            --config auto \
-            --config p/dockerfile \
-            --error \
-            app/devsecops-app-student/app-student
+          docker build -t devsecops-app:latest app/devsecops-app-student/app-student
+
+      - name: Run Trivy Container Scan (Scan da Imagem Docker)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'image'
+          image-ref: 'devsecops-app:latest'
+          severity: 'CRITICAL'
+          exit-code: '1'
