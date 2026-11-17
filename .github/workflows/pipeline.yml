@@ -1,5 +1,3 @@
-
-#Começo Bloco 3
 name: Security Pipeline - SAST, SCA, Secrets & Container
 
 on:
