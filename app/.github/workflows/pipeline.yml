@@ -1,4 +1,4 @@
-name: Security Pipeline - SAST Semgrep
+name: Security Pipeline - SAST, SCA, Secrets & Container
 
 on:
   push:
@@ -7,24 +7,59 @@ on:
     branches: [ "main" ]
 
 jobs:
-  semgrep-sast:
-    name: Run SAST Analysis with Semgrep
+  security-gates:
+    name: Security Gates (Semgrep + Gitleaks + Trivy)
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repository (com histórico completo para Gitleaks)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Install Semgrep
+      - name: Install and Run Semgrep (SAST)
         run: |
           python -m pip install --upgrade pip
           pip install semgrep
-
-      - name: Run Semgrep SAST Scan
-        run: |
           semgrep --config "p/dockerfile" --error app/devsecops-app-student/app-student/Dockerfile
+
+      - name: Run Gitleaks (Detecção de Segredos)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Trivy SCA (Scan de Dependências e Código)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'app/devsecops-app-student/app-student'
+          severity: 'CRITICAL'
+          exit-code: '1'
+
+      - name: Build Docker Image para Scan
+        run: |
+          docker build -t devsecops-app:latest app/devsecops-app-student/app-student
+
+      - name: Run Trivy Container Scan (Scan da Imagem Docker)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'image'
+          image-ref: 'devsecops-app:latest'
+          severity: 'CRITICAL'
+          exit-code: '1'
+
+  deploy:
+    name: Deploy Automático no Render
+    needs: security-gates
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Acionar Deploy Hook no Render
+        run: |
+          curl -f -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
