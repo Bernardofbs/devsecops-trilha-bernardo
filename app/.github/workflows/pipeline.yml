@@ -53,7 +53,7 @@ jobs:
           severity: 'CRITICAL'
           exit-code: '1'
 
-  deploy:
+ deploy:
     name: Deploy Automático no Render
     needs: security-gates
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
