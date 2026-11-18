@@ -52,3 +52,14 @@ jobs:
           image-ref: 'devsecops-app:latest'
           severity: 'CRITICAL'
           exit-code: '1'
+
+  deploy:
+    name: Deploy Automático no Render
+    needs: security-gates
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Acionar Deploy Hook no Render
+        run: |
+          curl -f -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
